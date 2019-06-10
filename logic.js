@@ -6,39 +6,15 @@ function markerSize(population) {
 const formatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
-  minimumFractionDigits: 2
+  minimumFractionDigits:0
 })
 
-// An array containing all of the information needed to create city and state markers
-var home_sales = [
-  {
-    "date": "6/8/2019",
-    "street_1": "20765 Saratoga Dr",
-    "street_2": "",
-    "city": "Fairview Park",
-    "state": "OH",
-    "zip": 44236,
-    "sale_price": 500000,
-    "lat": 41.44,
-    "long": -81.85,
-    "location": [41.44,-81.85]
-  },
-  {
-    "date": "6/9/2019",
-    "street_1": "1 Center Court",
-    "street_2": "",
-    "city": "Cleveland",
-    "state": "OH",
-    "zip": 44144,
-    "sale_price": 200000,
-    "lat": 41.49,
-    "long": -81.68,
-    "location": [41.49,-81.68]
-  }
-];
+var link = "https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/cleveland.geojson";
 
 // Define arrays to hold created city and state markers
 var sales_arr = [];
+var makers_arr = [];
+
 var total = 0
 // Loop through locations and create city and state markers
 for (var i = 0; i < home_sales.length; i++) {
@@ -63,6 +39,11 @@ for (var i = 0; i < home_sales.length; i++) {
     radius = 200;;
   }
   // Setting the marker radius for the city by passing population into the markerSize function
+  makers_arr.push(
+    L.marker(home_sales[i].location).bindPopup("<h5>" + home_sales[i].street_1 + home_sales[i].street_2 +"<br>"+ home_sales[i].city+", "+
+                      home_sales[i].state+" "+home_sales[i].zip+"</h5> <hr> <h5>Sale Price: " + formatter.format(home_sales[i].sale_price) +"<br>"+"Closing Date: "+home_sales[i].date+"</h5>")
+  );
+
   sales_arr.push( 
     L.circle(home_sales[i].location, {
       fillOpacity: 0.75,
@@ -70,8 +51,8 @@ for (var i = 0; i < home_sales.length; i++) {
       fillColor: color,
       radius: markerSize(home_sales[i].sale_price),
     })
-    .bindPopup("<h4>" + home_sales[i].street_1 +"<br>"+ home_sales[i].street_2 +"<br>"+ home_sales[i].city+", "+
-                      home_sales[i].state+" "+home_sales[i].zip+"</h4> <hr> <h5>Sale Price: " + formatter.format(home_sales[i].sale_price) + "</h5>")
+    .bindPopup("<h5>" + home_sales[i].street_1 +"<br>"+ home_sales[i].street_2 + home_sales[i].city+", "+
+                      home_sales[i].state+" "+home_sales[i].zip+"</h5> <hr> <h5>Sale Price: "+ formatter.format(home_sales[i].sale_price) +"<br>"+"Closing Date: "+home_sales[i].date+"</h5>")
   )};
 
 // Define variables for our base layers
@@ -96,26 +77,37 @@ var satellite = L.tileLayer("https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.pn
   accessToken: API_KEY
 });
 
+var light = L.tileLayer("https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}", {
+  attribution: "Map data &copy; <a href=\"https://www.openstreetmap.org/\">OpenStreetMap</a> contributors, <a href=\"https://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA</a>, Imagery © <a href=\"https://www.mapbox.com/\">Mapbox</a>",
+  maxZoom: 18,
+  id: "mapbox.light",
+  accessToken: API_KEY
+});
+
 // Create two separate layer groups: one for cities and one for states
-var cities = L.layerGroup(sales_arr);
+var markers = L.layerGroup(makers_arr);
+var sales_markers = L.layerGroup(sales_arr);
 
 // Create a baseMaps object
 var baseMaps = {
   "Street Map": streetmap,
   "Dark Map": darkmap,
-  "Satellite": satellite
+  "Light Map": light,
+  "Satellite": satellite,
+  
 };
 
 // Create an overlay object
 var overlayMaps = {
-  "Sales": cities
+  "Sales by Size": sales_markers,
+  "Sales Markers": markers
 };
 
 // Define a map object
 var myMap = L.map("map", {
   center: [41.445, -81.8155],
   zoom: 12,
-  layers: [streetmap, cities]
+  layers: [streetmap, sales_markers]
 });
 
 // Pass our map layers into our layer control
@@ -126,3 +118,6 @@ L.control.layers(baseMaps, overlayMaps, {
 
 console.log(total)
 document.getElementById('output_tip').innerHTML = total;
+
+
+
